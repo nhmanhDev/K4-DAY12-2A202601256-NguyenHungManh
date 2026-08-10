@@ -9,6 +9,7 @@ services:
     runtime: docker
     dockerfilePath: ./Dockerfile
     plan: free
+    region: singapore
     healthCheckPath: /healthz
     envVars:
       - key: API_TOKEN
@@ -24,10 +25,11 @@ services:
       - key: REDIS_URL
         fromService:
           name: day12-chat-redis
-          type: redis
+          type: keyvalue
           property: connectionString
 
-  - type: redis
+  - type: keyvalue
     name: day12-chat-redis
     plan: free
+    region: singapore
     ipAllowList: []
