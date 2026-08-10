@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>K4 — Ngày 12: Hạ Tầng Cloud & Deployment</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        /* ── RESET & BASE ── */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body { height: 100%; overflow: hidden; font-family: 'Inter', sans-serif; background: #fff; color: #1a1a2e; }
+
+        /* ── SLIDE CONTAINER ── */
+        .deck { position: relative; width: 100vw; height: 100vh; }
+        .slide {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
+            padding: 60px 80px;
+            opacity: 0; visibility: hidden;
+            transition: opacity 0.45s ease, transform 0.45s ease;
+            transform: translateX(40px);
+            background: #ffffff;
+        }
+        .slide.active {
+            opacity: 1; visibility: visible; transform: translateX(0);
+        }
+        .slide.exit {
+            opacity: 0; transform: translateX(-40px);
+        }
+
+        /* ── TYPOGRAPHY ── */
+        h1 { font-size: 2.6rem; font-weight: 800; line-height: 1.2; margin-bottom: 12px; color: #0f172a; }
+        h2 { font-size: 2rem; font-weight: 700; line-height: 1.3; margin-bottom: 20px; color: #1e293b; }
+        h3 { font-size: 1.35rem; font-weight: 600; color: #334155; margin-bottom: 10px; }
+        p, li { font-size: 1.1rem; line-height: 1.75; color: #475569; }
+        ul { list-style: none; padding: 0; }
+        ul li { position: relative; padding-left: 28px; margin-bottom: 10px; }
+        ul li::before {
+            content: ''; position: absolute; left: 0; top: 10px;
+            width: 10px; height: 10px; border-radius: 50%;
+            background: linear-gradient(135deg, #3b82f6, #6366f1);
+        }
+        code {
+            font-family: 'Courier New', monospace; font-size: 0.95rem;
+            background: #f1f5f9; border: 1px solid #e2e8f0;
+            padding: 2px 8px; border-radius: 6px; color: #7c3aed;
+        }
+
+        /* ── COVER SLIDE ── */
+        .slide-cover { text-align: center; }
+        .slide-cover h1 { font-size: 3rem; margin-bottom: 16px; }
+        .slide-cover .subtitle {
+            font-size: 1.3rem; color: #64748b; font-weight: 500; margin-bottom: 32px;
+        }
+        .badge-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; margin-bottom: 24px; }
+        .badge {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 6px 16px; border-radius: 20px; font-size: 0.85rem; font-weight: 600;
+            border: 1.5px solid #e2e8f0; color: #475569; background: #f8fafc;
+        }
+        .badge .dot { width: 8px; height: 8px; border-radius: 50%; }
+        .badge .dot.green { background: #22c55e; }
+        .badge .dot.blue { background: #3b82f6; }
+        .badge .dot.purple { background: #8b5cf6; }
+        .author-info { font-size: 1.05rem; color: #94a3b8; margin-top: 8px; }
+
+        /* ── CONTENT LAYOUT ── */
+        .content-wrap { width: 100%; max-width: 1000px; text-align: left; }
+        .content-wrap h2 { text-align: left; }
+
+        /* ── TWO COLUMN ── */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; width: 100%; max-width: 1000px; align-items: start; }
+        .two-col .col { text-align: left; }
+
+        /* ── CARD ── */
+        .card {
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 16px;
+            padding: 24px 28px; margin-bottom: 16px;
+        }
+        .card h3 { margin-bottom: 8px; }
+        .card p { font-size: 1rem; color: #64748b; }
+
+        /* ── TABLE ── */
+        .slide-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 1rem; }
+        .slide-table th {
+            text-align: left; padding: 12px 16px; font-weight: 600; color: #fff;
+            background: linear-gradient(135deg, #3b82f6, #6366f1); border: none;
+        }
+        .slide-table th:first-child { border-radius: 10px 0 0 0; }
+        .slide-table th:last-child { border-radius: 0 10px 0 0; }
+        .slide-table td {
+            padding: 11px 16px; border-bottom: 1px solid #f1f5f9; color: #475569;
+        }
+        .slide-table tr:last-child td { border-bottom: none; }
+        .slide-table tr:nth-child(even) td { background: #fafbfd; }
+        .slide-table tr:hover td { background: #eff6ff; }
+
+        /* ── FLOW DIAGRAM ── */
+        .flow { display: flex; align-items: center; gap: 0; justify-content: center; flex-wrap: wrap; margin: 20px 0; }
+        .flow-step {
+            background: linear-gradient(135deg, #eff6ff, #f0f0ff);
+            border: 1.5px solid #c7d2fe; border-radius: 12px;
+            padding: 14px 20px; font-size: 0.95rem; font-weight: 600; color: #3730a3;
+            min-width: 120px; text-align: center;
+        }
+        .flow-arrow { font-size: 1.4rem; color: #a5b4fc; margin: 0 6px; }
+
+        /* ── HIGHLIGHT BOX ── */
+        .highlight-box {
+            background: linear-gradient(135deg, #eff6ff, #f5f3ff);
+            border-left: 4px solid #6366f1; border-radius: 0 12px 12px 0;
+            padding: 20px 24px; margin: 16px 0; width: 100%; max-width: 1000px;
+        }
+        .highlight-box p { color: #4338ca; font-weight: 500; }
+
+        /* ── CODE BLOCK ── */
+        .code-block {
+            background: #1e293b; color: #e2e8f0; padding: 20px 24px;
+            border-radius: 12px; font-family: 'Courier New', monospace;
+            font-size: 0.9rem; line-height: 1.7; overflow-x: auto;
+            margin: 12px 0; white-space: pre; width: 100%;
+        }
+        .code-block .keyword { color: #c084fc; }
+        .code-block .string { color: #86efac; }
+        .code-block .comment { color: #64748b; }
+
+        /* ── STATUS ICONS ── */
+        .status-pass { color: #22c55e; font-weight: 700; }
+        .status-score { color: #3b82f6; font-weight: 700; }
+
+        /* ── CHECKPOINT GRID ── */
+        .cp-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; width: 100%; max-width: 1000px; }
+        .cp-card {
+            background: #f8fafc; border: 1.5px solid #e2e8f0; border-radius: 14px;
+            padding: 20px; text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .cp-card:hover { transform: translateY(-3px); box-shadow: 0 8px 24px rgba(0,0,0,0.06); }
+        .cp-num { font-size: 1.8rem; font-weight: 800; color: #6366f1; }
+        .cp-title { font-size: 0.95rem; font-weight: 600; color: #334155; margin: 6px 0 4px; }
+        .cp-pts { font-size: 0.85rem; color: #94a3b8; }
+
+        /* ── NAVIGATION ── */
+        .nav-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 32px;
+            background: rgba(255,255,255,0.92); backdrop-filter: blur(8px);
+            border-top: 1px solid #f1f5f9; z-index: 100;
+        }
+        .nav-btn {
+            display: inline-flex; align-items: center; gap: 6px;
+            padding: 10px 22px; border: 1.5px solid #e2e8f0; border-radius: 10px;
+            background: #fff; color: #475569; font-size: 0.9rem; font-weight: 600;
+            cursor: pointer; transition: all 0.2s;
+        }
+        .nav-btn:hover { background: #f8fafc; border-color: #c7d2fe; color: #4338ca; }
+        .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+        .page-indicator { font-size: 0.9rem; color: #94a3b8; font-weight: 500; }
+
+        /* ── PROGRESS BAR ── */
+        .progress-bar {
+            position: fixed; top: 0; left: 0; height: 3px; z-index: 200;
+            background: linear-gradient(90deg, #3b82f6, #8b5cf6);
+            transition: width 0.4s ease;
+        }
+
+        /* ── ICON LABELS ── */
+        .icon-label { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+        .icon-circle {
+            width: 36px; height: 36px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1rem; color: #fff; flex-shrink: 0;
+        }
+        .bg-blue { background: #3b82f6; }
+        .bg-green { background: #22c55e; }
+        .bg-purple { background: #8b5cf6; }
+        .bg-amber { background: #f59e0b; }
+        .bg-red { background: #ef4444; }
+        .bg-teal { background: #14b8a6; }
+
+        /* ── ARCHITECTURE LIST ── */
+        .arch-list { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; max-width: 1000px; }
+        .arch-item {
+            display: flex; align-items: flex-start; gap: 14px;
+            background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px;
+            padding: 16px 18px;
+        }
+        .arch-item .file-name { font-weight: 700; color: #7c3aed; font-size: 0.95rem; }
+        .arch-item .file-desc { font-size: 0.9rem; color: #64748b; margin-top: 2px; }
+
+        /* ── FINAL SLIDE ── */
+        .final-slide { text-align: center; }
+        .final-slide h1 { font-size: 2.8rem; margin-bottom: 16px; }
+        .final-slide .emoji { font-size: 4rem; margin-bottom: 20px; }
+        .url-box {
+            display: inline-block; padding: 12px 28px; background: #f0fdf4;
+            border: 1.5px solid #bbf7d0; border-radius: 12px;
+            font-size: 1.1rem; font-weight: 600; color: #166534; margin-top: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="progress-bar" id="progressBar"></div>
+
+<div class="deck" id="deck">
+
+    <!-- ======== SLIDE 1: COVER ======== -->
+    <div class="slide slide-cover active" data-slide="0">
+        <div class="badge-row">
+            <span class="badge"><span class="dot green"></span> CI Passing</span>
+            <span class="badge"><span class="dot blue"></span> Python 3.11</span>
+            <span class="badge"><span class="dot purple"></span> FastAPI</span>
+        </div>
+        <h1>K4 — Ngày 12</h1>
+        <p class="subtitle">Hạ Tầng Cloud & Deployment</p>
+        <p style="font-size: 1.05rem; color: #94a3b8; max-width: 600px; text-align: center; margin-top: 4px;">
+            Đưa một Chat Service từ <code>localhost:8000</code> lên địa chỉ công khai —<br>
+            có bảo mật, giới hạn chi phí, và không sập khi deploy bản mới.
+        </p>
+        <div class="author-info" style="margin-top: 28px;">
+            <strong style="color: #1e293b; font-size: 1.15rem;">Nguyễn Hùng Mạnh</strong><br>
+            Mã HV: 2A202601256 &nbsp;·&nbsp; 10/08/2026
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 2: MỤC TIÊU ======== -->
+    <div class="slide" data-slide="1">
+        <div class="content-wrap">
+            <h2>🎯 Mục Tiêu Bài Lab</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 8px;">
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-blue">⚙</span><h3>12-Factor Config</h3></div>
+                    <p>Tách cấu hình ra khỏi code, secret không có giá trị mặc định</p>
+                </div>
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-purple">🐳</span><h3>Dockerfile Multi-stage</h3></div>
+                    <p>Container chạy non-root, image gọn nhẹ < 400MB</p>
+                </div>
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-green">🔒</span><h3>API Security</h3></div>
+                    <p>Bearer token (RFC 6750), Rate limit, Cost guard theo ngày</p>
+                </div>
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-amber">🩺</span><h3>Health & Graceful Shutdown</h3></div>
+                    <p>Liveness / Readiness probe, xử lý SIGTERM không rớt request</p>
+                </div>
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-teal">📈</span><h3>Stateless & Scale</h3></div>
+                    <p>State nằm ở Redis, mọi instance nhìn thấy — scale ngang được</p>
+                </div>
+                <div class="card">
+                    <div class="icon-label"><span class="icon-circle bg-red">☁</span><h3>Cloud Deployment</h3></div>
+                    <p>Deploy lên Render, có URL công khai hoạt động thật</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 3: KIẾN TRÚC TỔNG QUAN ======== -->
+    <div class="slide" data-slide="2">
+        <div class="content-wrap">
+            <h2>🏗️ Kiến Trúc Tổng Quan</h2>
+            <p style="margin-bottom: 20px;">Luồng xử lý một request <code>POST /chat</code>:</p>
+            <div class="flow">
+                <div class="flow-step">Client</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Bearer Auth</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Token Bucket</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Cost Guard</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Chat Store</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Mock LLM</div>
+                <span class="flow-arrow">→</span>
+                <div class="flow-step">Response</div>
+            </div>
+            <div class="highlight-box" style="margin-top: 24px;">
+                <p>💡 Kiểm tra bảo mật chạy <strong>trước</strong> khi gọi LLM — chặn trước khi tốn tiền, không phải sau.</p>
+            </div>
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 14px; margin-top: 16px;">
+                <div class="card" style="text-align: center;">
+                    <h3 style="color: #3b82f6;">401</h3><p>Thiếu / sai Bearer token</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <h3 style="color: #f59e0b;">429</h3><p>Hết token bucket</p>
+                </div>
+                <div class="card" style="text-align: center;">
+                    <h3 style="color: #ef4444;">402</h3><p>Hết ngân sách ngày</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 4: CẤU TRÚC THƯ MỤC ======== -->
+    <div class="slide" data-slide="3">
+        <div class="content-wrap">
+            <h2>📂 Cấu Trúc Dự Án</h2>
+            <div class="arch-list">
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/config.py</div>
+                        <div class="file-desc">Settings 12-Factor bằng Pydantic</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/main.py</div>
+                        <div class="file-desc">FastAPI — endpoints + ráp nối</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/auth.py</div>
+                        <div class="file-desc">Bearer token (RFC 6750)</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/rate_limiter.py</div>
+                        <div class="file-desc">Token Bucket rate limit</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/cost_guard.py</div>
+                        <div class="file-desc">Ngân sách chi phí theo ngày</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/store.py</div>
+                        <div class="file-desc">Lịch sử hội thoại trong Redis</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/lifecycle.py</div>
+                        <div class="file-desc">Graceful shutdown (SIGTERM)</div>
+                    </div>
+                </div>
+                <div class="arch-item">
+                    <div>
+                        <div class="file-name">app/logging_utils.py</div>
+                        <div class="file-desc">Structured log JSON</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 5: CP1 — 12-Factor Config ======== -->
+    <div class="slide" data-slide="4">
+        <div class="content-wrap">
+            <h2>CP1 — 12-Factor Config, Health & Logging</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>⚙️ Config (pydantic-settings)</h3>
+                    <ul>
+                        <li>7 trường đọc từ biến môi trường</li>
+                        <li><code>api_token</code> — <strong>không</strong> có mặc định → fail fast</li>
+                        <li><code>@lru_cache</code> — đọc 1 lần, cache lại</li>
+                    </ul>
+                    <div class="code-block"><span class="keyword">class</span> Settings(BaseSettings):
+    port: <span class="keyword">int</span> = <span class="string">8000</span>
+    api_token: <span class="keyword">str</span>         <span class="comment"># bắt buộc</span>
+    redis_url: <span class="keyword">str</span> = <span class="string">"redis://localhost:6379/0"</span>
+    bucket_capacity: <span class="keyword">int</span> = <span class="string">10</span>
+    daily_budget_usd: <span class="keyword">float</span> = <span class="string">1.0</span></div>
+                </div>
+                <div class="col">
+                    <h3>📋 Structured Logging</h3>
+                    <ul>
+                        <li>Mỗi dòng log = 1 JSON object</li>
+                        <li>Có <code>event</code>, <code>severity</code>, <code>ts</code></li>
+                        <li>Cloud đọc được → lọc, đếm, cảnh báo</li>
+                    </ul>
+                    <div class="code-block">{
+  <span class="string">"event"</span>: <span class="string">"chat_completed"</span>,
+  <span class="string">"severity"</span>: <span class="string">"INFO"</span>,
+  <span class="string">"ts"</span>: <span class="string">"2026-08-10T07:29:50..."</span>,
+  <span class="string">"client_id"</span>: <span class="string">"sv01"</span>,
+  <span class="string">"usd_cost"</span>: 0.0000226
+}</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 6: CP2 — Docker ======== -->
+    <div class="slide" data-slide="5">
+        <div class="content-wrap">
+            <h2>CP2 — Docker Multi-stage & Bảo Mật Image</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>🐳 Dockerfile Multi-stage</h3>
+                    <div class="code-block"><span class="comment"># Stage 1: Builder</span>
+<span class="keyword">FROM</span> python:3.11-slim <span class="keyword">AS</span> builder
+<span class="keyword">COPY</span> requirements.txt .
+<span class="keyword">RUN</span> pip install --prefix=/install
+
+<span class="comment"># Stage 2: Runtime</span>
+<span class="keyword">FROM</span> python:3.11-slim <span class="keyword">AS</span> runtime
+<span class="keyword">COPY</span> --from=builder /install /usr/local
+<span class="keyword">COPY</span> app ./app
+
+<span class="keyword">RUN</span> adduser --system appuser
+<span class="keyword">USER</span> appuser</div>
+                </div>
+                <div class="col">
+                    <h3>✅ Các điểm quan trọng</h3>
+                    <ul>
+                        <li><strong>Non-root user</strong> — giảm blast radius nếu bị khai thác</li>
+                        <li><strong>Cache layer</strong> — <code>requirements.txt</code> trước code → chỉ rebuild code khi sửa</li>
+                        <li><strong>HEALTHCHECK</strong> tích hợp trong Dockerfile</li>
+                        <li><strong>Image ~ 61 MB</strong> — gọn, dưới giới hạn 400MB</li>
+                    </ul>
+                    <h3 style="margin-top: 20px;">🔧 Docker Compose</h3>
+                    <ul>
+                        <li>3 services: <code>chat</code> + <code>redis</code> + <code>nginx</code></li>
+                        <li>Secret dùng <code>${API_TOKEN}</code> — không hardcode</li>
+                        <li>Scale: <code>docker compose up --scale chat=3</code></li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 7: CP3 — Bearer Token ======== -->
+    <div class="slide" data-slide="6">
+        <div class="content-wrap">
+            <h2>CP3 — API Security: Bearer Token</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>🔐 Xác thực theo RFC 6750</h3>
+                    <ul>
+                        <li>Header: <code>Authorization: Bearer &lt;token&gt;</code></li>
+                        <li>So sánh bằng <code>secrets.compare_digest()</code></li>
+                        <li>Chống timing attack — luôn chạy hết chuỗi</li>
+                        <li>Cùng 1 thông báo lỗi cho mọi trường hợp sai</li>
+                    </ul>
+                    <div class="highlight-box">
+                        <p>🛡️ Response 401 luôn kèm header <code>WWW-Authenticate: Bearer</code> — bắt buộc theo chuẩn HTTP</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <h3>📝 Luồng xác thực</h3>
+                    <div class="code-block"><span class="comment"># 1. Thiếu header → 401</span>
+<span class="keyword">if not</span> authorization:
+    <span class="keyword">raise</span> unauthorized
+
+<span class="comment"># 2. Sai scheme → 401</span>
+scheme, _, token = authorization.partition(<span class="string">" "</span>)
+<span class="keyword">if</span> scheme.lower() != <span class="string">"bearer"</span>:
+    <span class="keyword">raise</span> unauthorized
+
+<span class="comment"># 3. So sánh an toàn</span>
+<span class="keyword">if not</span> secrets.compare_digest(token, api_token):
+    <span class="keyword">raise</span> unauthorized
+
+<span class="comment"># 4. Trả client_id</span>
+<span class="keyword">return</span> x_client_id <span class="keyword">or</span> <span class="string">"anonymous"</span></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 8: CP3 — Token Bucket ======== -->
+    <div class="slide" data-slide="7">
+        <div class="content-wrap">
+            <h2>CP3 — Rate Limit: Token Bucket</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>🪣 Thuật toán Token Bucket</h3>
+                    <ul>
+                        <li>Mỗi client có 1 xô chứa tối đa <strong>10 token</strong></li>
+                        <li>Token nạp lại: <strong>10/phút</strong> (~0.167/giây)</li>
+                        <li>Mỗi request tiêu 1 token, hết → <strong>429</strong></li>
+                        <li>Cho phép burst — im lặng thì tích, cần thì tiêu</li>
+                    </ul>
+                    <div class="highlight-box">
+                        <p>⚠️ Luôn dùng <code>min(capacity, tokens)</code> — nếu không, im 1 ngày = tích 14,400 token!</p>
+                    </div>
+                </div>
+                <div class="col">
+                    <h3>💰 Cost Guard theo ngày</h3>
+                    <ul>
+                        <li>Ngân sách mặc định: <strong>$1.00/ngày</strong></li>
+                        <li>Mỗi request ghi chi phí bằng <code>INCRBYFLOAT</code></li>
+                        <li>Vượt budget → <strong>402 Payment Required</strong></li>
+                        <li>Key Redis theo ngày UTC → tự reset sang ngày mới</li>
+                    </ul>
+                    <div class="card" style="margin-top: 12px;">
+                        <h3>So sánh: $30/tháng vs $1/ngày</h3>
+                        <p>Sự cố lúc 2h sáng: hạn mức tháng mất tối đa $30, hạn mức ngày chỉ mất $1 và tự hồi phục sáng hôm sau.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 9: CP4 — Stateless & Graceful Shutdown ======== -->
+    <div class="slide" data-slide="8">
+        <div class="content-wrap">
+            <h2>CP4 — Scaling & Reliability</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>📦 Stateless — State ở Redis</h3>
+                    <ul>
+                        <li>Lịch sử chat lưu trong <strong>Redis List</strong></li>
+                        <li>Giữ tối đa 12 message gần nhất (<code>LTRIM</code>)</li>
+                        <li>TTL 3 ngày — tự dọn, không cần chạy cron</li>
+                        <li>Mọi instance đọc cùng data → scale ngang an toàn</li>
+                    </ul>
+                    <h3 style="margin-top: 16px;">🩺 Health Probes</h3>
+                    <ul>
+                        <li><code>/healthz</code> — nhẹ, không gọi Redis</li>
+                        <li><code>/readyz</code> — kiểm tra Redis, trả 503 nếu lỗi</li>
+                    </ul>
+                </div>
+                <div class="col">
+                    <h3>🔄 Graceful Shutdown</h3>
+                    <ul>
+                        <li>Bắt <code>SIGTERM</code> + <code>SIGINT</code></li>
+                        <li>Bật cờ <code>draining = True</code></li>
+                        <li>Health check trả 503 → load balancer ngừng đẩy traffic</li>
+                        <li>Xử lý nốt request đang chạy → thoát sạch</li>
+                    </ul>
+                    <div class="highlight-box" style="margin-top: 16px;">
+                        <p>💡 Gọi lại handler cũ (uvicorn) sau khi bật cờ — nếu không, app bật <code>draining</code> rồi chạy tiếp mãi mãi.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 10: CP5 — DEPLOY ======== -->
+    <div class="slide" data-slide="9">
+        <div class="content-wrap">
+            <h2>CP5 — Cloud Deployment trên Render</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>☁️ Thông tin Deploy</h3>
+                    <table class="slide-table">
+                        <tr><td style="font-weight: 600;">Platform</td><td>Render — Web Service (Docker)</td></tr>
+                        <tr><td style="font-weight: 600;">Region</td><td>Singapore</td></tr>
+                        <tr><td style="font-weight: 600;">Redis</td><td>Render Key Value (private)</td></tr>
+                        <tr><td style="font-weight: 600;">URL</td><td><code>day12-chat-cjnn.onrender.com</code></td></tr>
+                    </table>
+                    <h3 style="margin-top: 20px;">✅ Smoke Test</h3>
+                    <table class="slide-table">
+                        <tr><td><code>GET /healthz</code></td><td class="status-pass">200 ✓</td></tr>
+                        <tr><td><code>GET /readyz</code></td><td class="status-pass">200 ✓</td></tr>
+                        <tr><td><code>POST /chat</code> (no token)</td><td class="status-pass">401 ✓</td></tr>
+                        <tr><td><code>POST /chat</code> (Bearer)</td><td class="status-pass">200 ✓</td></tr>
+                    </table>
+                </div>
+                <div class="col">
+                    <h3>🔧 Biến Môi Trường</h3>
+                    <ul>
+                        <li><code>PORT</code> — Render tự gán</li>
+                        <li><code>API_TOKEN</code> — trong Render Environment</li>
+                        <li><code>REDIS_URL</code> — private connection</li>
+                        <li><code>BUCKET_CAPACITY</code> = 10</li>
+                        <li><code>DAILY_BUDGET_USD</code> = 1.0</li>
+                    </ul>
+                    <div class="card" style="margin-top: 16px;">
+                        <h3>🐛 Lỗi thực tế gặp phải</h3>
+                        <p>Redis hostname trỏ instance cũ → <code>ConnectionError</code>. Giải pháp: tạo Redis riêng cùng region, cập nhật URL.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 11: BONUS — CI/CD ======== -->
+    <div class="slide" data-slide="10">
+        <div class="content-wrap">
+            <h2>🎁 Bonus — CI/CD với GitHub Actions</h2>
+            <div class="two-col">
+                <div class="col">
+                    <h3>🔁 Pipeline 3 bước</h3>
+                    <div class="flow" style="flex-direction: column; align-items: stretch; gap: 12px;">
+                        <div class="flow-step" style="text-align: left; display: flex; align-items: center; gap: 12px;">
+                            <span class="icon-circle bg-green" style="width: 32px; height: 32px; font-size: 0.85rem;">1</span>
+                            <div><strong>Test</strong><br><span style="font-size: 0.85rem; color: #64748b;">pytest — chạy mỗi push/PR</span></div>
+                        </div>
+                        <div class="flow-step" style="text-align: left; display: flex; align-items: center; gap: 12px;">
+                            <span class="icon-circle bg-blue" style="width: 32px; height: 32px; font-size: 0.85rem;">2</span>
+                            <div><strong>Build</strong><br><span style="font-size: 0.85rem; color: #64748b;">docker build — chỉ khi test pass</span></div>
+                        </div>
+                        <div class="flow-step" style="text-align: left; display: flex; align-items: center; gap: 12px;">
+                            <span class="icon-circle bg-purple" style="width: 32px; height: 32px; font-size: 0.85rem;">3</span>
+                            <div><strong>Deploy</strong><br><span style="font-size: 0.85rem; color: #64748b;">Trigger Render API — chỉ trên main</span></div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <h3>📝 Workflow YAML</h3>
+                    <div class="code-block"><span class="keyword">name:</span> CI
+<span class="keyword">on:</span> [push, pull_request]
+
+<span class="keyword">jobs:</span>
+  <span class="string">test:</span>
+    runs-on: ubuntu-latest
+    steps:
+      - pytest tests -v
+
+  <span class="string">build:</span>
+    needs: test
+    steps:
+      - docker build --tag day12-chat
+
+  <span class="string">deploy:</span>
+    needs: [test, build]
+    if: github.ref == 'refs/heads/main'
+    steps:
+      - curl Render Deploy API</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 12: BẢNG ĐIỂM ======== -->
+    <div class="slide" data-slide="11">
+        <div class="content-wrap">
+            <h2>📊 Tổng Kết Điểm</h2>
+            <table class="slide-table" style="max-width: 800px;">
+                <thead>
+                    <tr>
+                        <th>Checkpoint</th>
+                        <th>Nội dung</th>
+                        <th style="text-align: center;">Điểm</th>
+                        <th style="text-align: center;">Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>CP1</strong></td>
+                        <td>12-Factor Config, Health & Logging</td>
+                        <td style="text-align: center;" class="status-score">15</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CP2</strong></td>
+                        <td>Docker Multi-stage, Bảo mật Image</td>
+                        <td style="text-align: center;" class="status-score">15</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CP3</strong></td>
+                        <td>Bearer Token, Token Bucket, Cost Guard</td>
+                        <td style="text-align: center;" class="status-score">20</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CP4</strong></td>
+                        <td>Scaling & Reliability</td>
+                        <td style="text-align: center;" class="status-score">20</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>CP5</strong></td>
+                        <td>Cloud Deployment (Render)</td>
+                        <td style="text-align: center;" class="status-score">15</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Exercises</strong></td>
+                        <td>10 câu phản ánh</td>
+                        <td style="text-align: center;" class="status-score">15</td>
+                        <td style="text-align: center;" class="status-pass">✅ 10/10</td>
+                    </tr>
+                    <tr style="background: #f0f0ff;">
+                        <td><strong>BONUS</strong></td>
+                        <td>CI/CD GitHub Actions</td>
+                        <td style="text-align: center;" class="status-score">+10</td>
+                        <td style="text-align: center;" class="status-pass">✅ Pass</td>
+                    </tr>
+                </tbody>
+            </table>
+            <div class="highlight-box" style="margin-top: 20px; text-align: center;">
+                <p style="font-size: 1.3rem;">🏆 Tổng điểm: <strong style="font-size: 1.5rem;">100 / 100</strong> (bonus +10 nhưng cap tại 100)</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 13: BÀI HỌC RÚT RA ======== -->
+    <div class="slide" data-slide="12">
+        <div class="content-wrap">
+            <h2>💡 Bài Học Rút Ra</h2>
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                <div class="card">
+                    <h3>🚫 Fail Fast</h3>
+                    <p>Secret không có mặc định → phát hiện lỗi cấu hình ngay lúc khởi động, không phải khi bị exploit.</p>
+                </div>
+                <div class="card">
+                    <h3>🛡️ Defense in Depth</h3>
+                    <p>3 lớp bảo vệ: Bearer token → Rate limit → Cost guard. Mỗi lớp chặn 1 loại rủi ro khác nhau.</p>
+                </div>
+                <div class="card">
+                    <h3>🩺 Tách Probe</h3>
+                    <p><code>/healthz</code> ≠ <code>/readyz</code>. Gộp lại → Redis lỗi 30s gây restart storm cả cụm.</p>
+                </div>
+                <div class="card">
+                    <h3>📈 Stateless = Scalable</h3>
+                    <p>State nằm ở Redis, process không giữ gì → thêm instance bao nhiêu cũng được.</p>
+                </div>
+                <div class="card">
+                    <h3>🔄 Graceful Shutdown</h3>
+                    <p>Bắt SIGTERM, drain request → deploy bản mới không ai thấy lỗi 502.</p>
+                </div>
+                <div class="card">
+                    <h3>📋 Log cho máy đọc</h3>
+                    <p>JSON log 1 dòng → Cloud đọc, lọc, đếm, cảnh báo tự động. <code>print()</code> không làm được.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ======== SLIDE 14: KẾT THÚC ======== -->
+    <div class="slide final-slide" data-slide="13">
+        <div class="emoji">🚀</div>
+        <h1>Cảm ơn đã lắng nghe!</h1>
+        <p style="font-size: 1.2rem; color: #64748b; margin-top: 8px;">
+            Chat Service đang chạy tại:
+        </p>
+        <div class="url-box">
+            https://day12-chat-cjnn.onrender.com
+        </div>
+        <p style="margin-top: 28px; color: #94a3b8; font-size: 1rem;">
+            Nguyễn Hùng Mạnh — 2A202601256<br>
+            <span style="font-size: 0.9rem;">K4 · Ngày 12 · Hạ Tầng Cloud & Deployment</span>
+        </p>
+    </div>
+
+</div>
+
+<!-- ── NAVIGATION BAR ── -->
+<nav class="nav-bar">
+    <button class="nav-btn" id="prevBtn" onclick="navigate(-1)">
+        ← Trước
+    </button>
+    <span class="page-indicator" id="pageIndicator">1 / 14</span>
+    <button class="nav-btn" id="nextBtn" onclick="navigate(1)">
+        Tiếp →
+    </button>
+</nav>
+
+<script>
+    const slides = document.querySelectorAll('.slide');
+    const total = slides.length;
+    let current = 0;
+
+    function showSlide(index) {
+        slides.forEach((s, i) => {
+            s.classList.remove('active', 'exit');
+            if (i === index) s.classList.add('active');
+        });
+        document.getElementById('pageIndicator').textContent = `${index + 1} / ${total}`;
+        document.getElementById('prevBtn').disabled = index === 0;
+        document.getElementById('nextBtn').disabled = index === total - 1;
+        document.getElementById('progressBar').style.width = `${((index + 1) / total) * 100}%`;
+    }
+
+    function navigate(dir) {
+        const next = current + dir;
+        if (next < 0 || next >= total) return;
+        slides[current].classList.add('exit');
+        current = next;
+        showSlide(current);
+    }
+
+    // Keyboard navigation
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+            e.preventDefault();
+            navigate(1);
+        }
+        if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+            e.preventDefault();
+            navigate(-1);
+        }
+        // Home / End
+        if (e.key === 'Home') { current = 0; showSlide(0); }
+        if (e.key === 'End') { current = total - 1; showSlide(total - 1); }
+    });
+
+    // Touch swipe
+    let touchStartX = 0;
+    document.addEventListener('touchstart', (e) => { touchStartX = e.changedTouches[0].screenX; });
+    document.addEventListener('touchend', (e) => {
+        const diff = touchStartX - e.changedTouches[0].screenX;
+        if (Math.abs(diff) > 50) navigate(diff > 0 ? 1 : -1);
+    });
+
+    // Init
+    showSlide(0);
+</script>
+
+</body>
+</html>
