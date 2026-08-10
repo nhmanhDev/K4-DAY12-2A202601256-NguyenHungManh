@@ -9,25 +9,25 @@ Mã học viên: **2A202601256**
 
 ### Câu 1 — Fail fast (CP1)
 
-Nếu tôi quên khai báo `API_TOKEN` trên Render mà code lại có mặc định `"changeme"`, service vẫn lên public. Người biết hoặc đoán token mặc định đó có thể gọi `/chat`; với LLM thật thì họ có thể tiêu ngân sách của tôi trước khi tôi phát hiện. Khi `api_token` bắt buộc, Pydantic báo lỗi ngay lúc container khởi động; health check không qua và log Render chỉ thẳng vào biến bị thiếu. Tôi sửa cấu hình trước khi service nhận một request nào.
+Nếu em quên khai báo `API_TOKEN` trên Render mà code lại có mặc định `"changeme"`, service vẫn lên public. Người biết hoặc đoán token mặc định đó có thể gọi `/chat`; với LLM thật thì họ có thể tiêu ngân sách của em trước khi em phát hiện. Khi `api_token` bắt buộc, Pydantic báo lỗi ngay lúc container khởi động; health check không qua và log Render chỉ thẳng vào biến bị thiếu. Em sửa cấu hình trước khi service nhận một request nào.
 
 ---
 
 ### Câu 2 — Log cho máy đọc (CP1)
 
-Sau khi gửi một request local với `X-Client-Id: exercise-log`, tôi nhận được dòng log JSON:
+Sau khi gửi một request local với `X-Client-Id: exercise-log`, em nhận được dòng log JSON:
 
 ```json
 {"event":"chat_completed","severity":"INFO","ts":"2026-08-10T07:29:50.729881+00:00","client_id":"exercise-log","prompt_tokens":5,"completion_tokens":38,"usd_cost":0.00002355}
 ```
 
-Từ các field này, tôi có thể lọc riêng toàn bộ request của một `client_id` để điều tra abuse, và cộng `prompt_tokens`, `completion_tokens` hoặc `usd_cost` theo thời gian để đặt cảnh báo chi phí. `print("đã trả lời xong")` không có timestamp chuẩn, severity, client hay số liệu để máy lọc, nhóm và tính tổng đáng tin cậy.
+Từ các field này, em có thể lọc riêng toàn bộ request của một `client_id` để điều tra abuse, và cộng `prompt_tokens`, `completion_tokens` hoặc `usd_cost` theo thời gian để đặt cảnh báo chi phí. `print("đã trả lời xong")` không có timestamp chuẩn, severity, client hay số liệu để máy lọc, nhóm và tính tổng đáng tin cậy.
 
 ---
 
 ### Câu 3 — Kích thước image (CP2)
 
-Tôi build lại ngày 2026-08-10 từ cùng source context:
+Em build lại ngày 2026-08-10 từ cùng source context:
 
 | Bản | Dung lượng đo bằng `docker image inspect` |
 |---|---:|
@@ -40,7 +40,7 @@ Kết quả gần như bằng nhau, thậm chí bản multi-stage lớn hơn kho
 
 ### Câu 4 — Thứ tự lệnh trong Dockerfile (CP2)
 
-Tôi thêm tạm một dòng trắng vào `app/main.py` rồi build với `--progress=plain`, sau đó khôi phục file. Các layer `COPY requirements.txt`, `RUN pip install --prefix=/install`, `COPY --from=builder /install /usr/local` vẫn `CACHED`. `COPY app ./app` chạy lại; các bước sau nó (`COPY utils` và tạo `appuser`) cũng phải tạo lại output layer. Vì dependency nằm trước source code nên chỉ sửa code không bắt Docker tải/cài package lại.
+Em thêm tạm một dòng trắng vào `app/main.py` rồi build với `--progress=plain`, sau đó khôi phục file. Các layer `COPY requirements.txt`, `RUN pip install --prefix=/install`, `COPY --from=builder /install /usr/local` vẫn `CACHED`. `COPY app ./app` chạy lại; các bước sau nó (`COPY utils` và tạo `appuser`) cũng phải tạo lại output layer. Vì dependency nằm trước source code nên chỉ sửa code không bắt Docker tải/cài package lại.
 
 Nếu đặt `COPY . .` trước `RUN pip install`, một thay đổi ở bất kỳ file nào trong context (kể cả `app/main.py`) sẽ làm layer `COPY . .` đổi hash. `RUN pip install` đứng sau layer đó sẽ mất cache và chạy lại, dù `requirements.txt` không đổi; build sẽ chậm hơn và phụ thuộc mạng không cần thiết.
 
@@ -54,7 +54,7 @@ Chuỗi rủi ro là: một input hoặc dependency có lỗ hổng cho kẻ t�
 
 ### Câu 6 — Bearer token (CP3)
 
-HTTP 401 phải gửi `WWW-Authenticate: Bearer` để client biết endpoint dùng cơ chế xác thực nào và biết cần gửi lại credential theo chuẩn RFC 6750. Tôi trả cùng thông báo `invalid or missing bearer token` cho thiếu header, sai scheme và sai token vì nếu phân biệt, endpoint trở thành oracle cho người dò: họ biết header đã đúng format hay token đã gần đúng đến đâu. Người dùng hợp lệ vẫn sửa được bằng tài liệu API; thông tin chi tiết nên nằm trong log nội bộ, không trả cho người tấn công.
+HTTP 401 phải gửi `WWW-Authenticate: Bearer` để client biết endpoint dùng cơ chế xác thực nào và biết cần gửi lại credential theo chuẩn RFC 6750. Em trả cùng thông báo `invalid or missing bearer token` cho thiếu header, sai scheme và sai token vì nếu phân biệt, endpoint trở thành oracle cho người dò: họ biết header đã đúng format hay token đã gần đúng đến đâu. Người dùng hợp lệ vẫn sửa được bằng tài liệu API; thông tin chi tiết nên nằm trong log nội bộ, không trả cho người tấn công.
 
 ---
 
@@ -78,6 +78,6 @@ Nếu gộp probe và probe đó kiểm tra Redis, Redis mất kết nối 30 gi
 
 ### Câu 10 — Deploy thật (CP5)
 
-Lỗi thực tế đầu tiên của tôi là `/healthz` trả 200 nhưng `/readyz` trả 503 và `POST /chat` trả 500. Log Render ghi `redis.exceptions.ConnectionError: Error -2 connecting to red-d9skmdlbedkc73do2nag:6379. Name or service not known.` Tôi đối chiếu log với biến `REDIS_URL` và xác định private hostname đang trỏ tới Redis cũ, không phân giải được từ service mới.
+Lỗi thực tế đầu tiên của em là `/healthz` trả 200 nhưng `/readyz` trả 503 và `POST /chat` trả 500. Log Render ghi `redis.exceptions.ConnectionError: Error -2 connecting to red-d9skmdlbedkc73do2nag:6379. Name or service not known.` em đối chiếu log với biến `REDIS_URL` và xác định private hostname đang trỏ tới Redis cũ, không phân giải được từ service mới.
 
-Tôi không dùng chung Redis cũ. Sau khi Redis cũ được xoá, tôi tạo Render Key Value riêng `day12-chat-redis` cùng workspace/region Singapore, cập nhật riêng `REDIS_URL` bằng private connection rồi redeploy. Smoke test sau deploy: `/healthz` 200, `/readyz` 200, chat không token 401 và chat có Bearer token 200. Việc `/readyz` lỗi nhưng `/healthz` vẫn xanh giúp khoanh vùng ngay dependency Redis thay vì nhầm là container chết.
+Em không dùng chung Redis cũ. Sau khi Redis cũ được xoá, em tạo Render Key Value riêng `day12-chat-redis` cùng workspace/region Singapore, cập nhật riêng `REDIS_URL` bằng private connection rồi redeploy. Smoke test sau deploy: `/healthz` 200, `/readyz` 200, chat không token 401 và chat có Bearer token 200. Việc `/readyz` lỗi nhưng `/healthz` vẫn xanh giúp khoanh vùng ngay dependency Redis thay vì nhầm là container chết.
