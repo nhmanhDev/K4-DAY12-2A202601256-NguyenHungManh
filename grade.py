@@ -29,6 +29,18 @@ import pytest
 
 ROOT = Path(__file__).parent
 
+
+def _configure_utf8_stdout() -> None:
+    """Keep Vietnamese grading output usable in legacy Windows terminals."""
+    try:
+        sys.stdout.reconfigure(encoding="utf-8")
+    except (AttributeError, OSError):
+        # Embedded interpreters and custom streams may not support reconfigure.
+        pass
+
+
+_configure_utf8_stdout()
+
 # (mã, tên hiển thị, args pytest, điểm tối đa)
 CHECKPOINTS = [
     ("CP1", "12-Factor Config, Health & Logging", ["tests/test_cp1.py"], 15),
