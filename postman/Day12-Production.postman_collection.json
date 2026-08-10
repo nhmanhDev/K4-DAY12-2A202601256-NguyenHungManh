@@ -1,0 +1,48 @@
+{
+  "info": {
+    "_postman_id": "a4087b2d-bfbd-4fd7-bdc8-c8eb4bd79c4a",
+    "name": "DAY12 Production",
+    "description": "Production smoke tests for the K4 Day 12 contract. Select the Day12 Production environment and set api_token before running the authenticated request.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "client_id",
+      "value": "postman-demo",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "01 - Healthz",
+      "event": [{"listen": "test", "script": {"exec": ["pm.test('healthz returns 200', function () {", "    pm.response.to.have.status(200);", "});", "pm.test('healthz body reports ok', function () {", "    pm.expect(pm.response.json().status).to.eql('ok');", "});"], "type": "text/javascript"}}],
+      "request": {"method": "GET", "header": [], "url": "{{base_url}}/healthz"}
+    },
+    {
+      "name": "02 - Readyz",
+      "event": [{"listen": "test", "script": {"exec": ["pm.test('readyz returns 200', function () {", "    pm.response.to.have.status(200);", "});", "pm.test('Redis is ready', function () {", "    pm.expect(pm.response.json().redis).to.eql(true);", "});"], "type": "text/javascript"}}],
+      "request": {"method": "GET", "header": [], "url": "{{base_url}}/readyz"}
+    },
+    {
+      "name": "03 - Chat without token (expects 401)",
+      "event": [{"listen": "test", "script": {"exec": ["pm.test('chat rejects requests without a token', function () {", "    pm.response.to.have.status(401);", "});", "pm.test('challenge uses Bearer auth', function () {", "    pm.expect(pm.response.headers.get('WWW-Authenticate')).to.eql('Bearer');", "});"], "type": "text/javascript"}}],
+      "request": {
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}],
+        "body": {"mode": "raw", "raw": "{\n  \"message\": \"This request should be rejected\"\n}", "options": {"raw": {"language": "json"}}},
+        "url": "{{base_url}}/chat"
+      }
+    },
+    {
+      "name": "04 - Chat authenticated",
+      "event": [{"listen": "test", "script": {"exec": ["pm.test('chat returns 200', function () {", "    pm.response.to.have.status(200);", "});", "pm.test('chat response contains the documented fields', function () {", "    var body = pm.response.json();", "    pm.expect(body.reply).to.be.a('string').and.not.empty;", "    pm.expect(body.client_id).to.eql(pm.variables.replaceIn('{{client_id}}'));", "    pm.expect(body.turns_before).to.be.a('number');", "    pm.expect(body.usd_cost).to.be.a('number');", "    pm.expect(body.usage).to.have.all.keys('prompt', 'completion');", "});"], "type": "text/javascript"}}],
+      "request": {
+        "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{api_token}}", "type": "string"}]},
+        "method": "POST",
+        "header": [{"key": "Content-Type", "value": "application/json"}, {"key": "X-Client-Id", "value": "{{client_id}}"}],
+        "body": {"mode": "raw", "raw": "{\n  \"message\": \"Xin chào từ Postman\"\n}", "options": {"raw": {"language": "json"}}},
+        "url": "{{base_url}}/chat"
+      }
+    }
+  ]
+}

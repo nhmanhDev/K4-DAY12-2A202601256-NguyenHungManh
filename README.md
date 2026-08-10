@@ -115,6 +115,9 @@ Chi tiết từng bước: [LAB_GUIDE.md](LAB_GUIDE.md).
 
 ## Hợp Đồng API Bạn Sẽ Xây
 
+Tài liệu endpoint production, bao gồm quy trình import và chạy Postman, ở
+[API.md](API.md). Swagger UI tương tác có tại `/docs` trên public URL.
+
 | | |
 |---|---|
 | `GET /healthz` | Liveness — 200 khi process sống, 503 khi đang tắt dần |

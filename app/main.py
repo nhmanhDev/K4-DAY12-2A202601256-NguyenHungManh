@@ -68,7 +68,30 @@ async def lifespan(_app: FastAPI):
     emit("service_stopped", service=SERVICE_NAME)
 
 
-app = FastAPI(title="Day 12 Chat Service", version=SERVICE_VERSION, lifespan=lifespan)
+app = FastAPI(
+    title="Day 12 Chat Service API",
+    version=SERVICE_VERSION,
+    description=(
+        "API production cho bài Lab Day 12.  \n"
+        "- **Health** kiểm tra process, không phụ thuộc Redis.  \n"
+        "- **Readiness** kiểm tra Redis trước khi nhận traffic.  \n"
+        "- **Chat** yêu cầu `Authorization: Bearer <API_TOKEN>` và hỗ trợ "
+        "`X-Client-Id` để tách lịch sử, rate limit và chi phí theo client.\n\n"
+        "Tài liệu thao tác Postman đầy đủ: [`API.md`](https://github.com/"
+        "nhmanhDev/K4-DAY12-2A202601256-NguyenHungManh/blob/main/API.md)."
+    ),
+    openapi_tags=[
+        {
+            "name": "Operations",
+            "description": "Probe cho Render/load balancer. Không yêu cầu token.",
+        },
+        {
+            "name": "Chat",
+            "description": "Mock LLM có bảo vệ Bearer token, rate limit và cost guard.",
+        },
+    ],
+    lifespan=lifespan,
+)
 
 
 class ChatRequest(BaseModel):
@@ -78,7 +101,16 @@ class ChatRequest(BaseModel):
 # ─────────────────────────────────────────────────────────────
 # Health & readiness
 # ─────────────────────────────────────────────────────────────
-@app.get("/healthz")
+@app.get(
+    "/healthz",
+    tags=["Operations"],
+    summary="Liveness probe",
+    description="Xác nhận process còn hoạt động; endpoint này không kết nối Redis.",
+    responses={
+        200: {"description": "Process đang hoạt động."},
+        503: {"description": "Service đang draining để graceful shutdown."},
+    },
+)
 def healthz():
     """Liveness probe — process còn sống không?
 
@@ -101,7 +133,16 @@ def healthz():
     }
 
 
-@app.get("/readyz")
+@app.get(
+    "/readyz",
+    tags=["Operations"],
+    summary="Readiness probe",
+    description="Chỉ trả 200 khi service không draining và Redis phản hồi ping thành công.",
+    responses={
+        200: {"description": "Service sẵn sàng nhận traffic và Redis kết nối được."},
+        503: {"description": "Redis không sẵn sàng hoặc service đang draining."},
+    },
+)
 def readyz(store: ChatStore = Depends(get_store)):
     """Readiness probe — đã sẵn sàng nhận traffic chưa?
 
@@ -126,7 +167,23 @@ def readyz(store: ChatStore = Depends(get_store)):
 # ─────────────────────────────────────────────────────────────
 # Endpoint chính
 # ─────────────────────────────────────────────────────────────
-@app.post("/chat")
+@app.post(
+    "/chat",
+    tags=["Chat"],
+    summary="Gửi tin nhắn tới mock chat service",
+    description=(
+        "Gọi mock LLM offline và lưu lịch sử hội thoại trong Redis. "
+        "Gửi `Authorization: Bearer <API_TOKEN>`; có thể gửi thêm `X-Client-Id` "
+        "để định danh client."
+    ),
+    responses={
+        200: {"description": "Tin nhắn được xử lý thành công."},
+        401: {"description": "Thiếu hoặc sai Bearer token."},
+        402: {"description": "Client đã vượt ngân sách chi phí trong ngày."},
+        422: {"description": "JSON body không hợp lệ hoặc message rỗng/quá dài."},
+        429: {"description": "Client đã dùng hết token bucket; xem header Retry-After."},
+    },
+)
 def chat(
     payload: ChatRequest,
     client_id: str = Depends(verify_bearer_token),
