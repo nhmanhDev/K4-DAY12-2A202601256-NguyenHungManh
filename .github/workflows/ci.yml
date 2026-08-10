@@ -36,7 +36,7 @@ jobs:
       - name: Trigger Render deploy
         env:
           RENDER_TOKEN: ${{ secrets.RENDER_TOKEN }}
-          RENDER_SERVICE_ID: ${{ secrets.RENDER_SERVICE_ID }}
+          RENDER_SERVICE_ID: ${{ vars.RENDER_SERVICE_ID }}
         run: |
           test -n "$RENDER_TOKEN"
           test -n "$RENDER_SERVICE_ID"
