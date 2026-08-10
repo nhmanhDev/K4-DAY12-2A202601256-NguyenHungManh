@@ -30,7 +30,7 @@ jobs:
 
   deploy:
     needs: [test, build]
-    if: github.ref == 'refs/heads/main'
+    if: github.ref == 'refs/heads/main' && vars.RENDER_SERVICE_ID != ''
     runs-on: ubuntu-latest
     steps:
       - name: Trigger Render deploy
